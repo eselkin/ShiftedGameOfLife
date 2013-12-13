@@ -12,11 +12,11 @@
 using namespace std;
 
 // Lowlevel functions copying or making 0s
-void initialize_world(int **World, int MAX);
+void initialize_world(int **World_type, int MAX);
 
 // Loop controlling functions
-void calculate_next_generation(int **World_original, int& generation);
-void count_neighbors(int **World, int r, int c, int& num_type_1, int& num_type_2);
+void calculate_next_generation(int **World_original, int **World_color, int& generation, int MAX);
+void count_neighbors(int **World, int r, int c, int& num_type_0, int& num_type_1, int& num_type_2);
 int  next_bit_state(int current_state, int num_type_1, int num_type_2); // current_state= World[r][c], return int is stored into World_neXtGen[][]
 
 // Menu functions
@@ -28,15 +28,15 @@ void get_m_size(char two_D_size[], int& m_rows, int& m_cols);
 int  findpos(char here[], char what); // returns position of what in here[] or -1 if DNE
 void substr (char whole[], char part[], int startpos, int endpos);
 
-void initialize_world(int **World, int MAX)
+void initialize_world(int **World_type, int MAX)
 {
     int r, c;
     for (r = 0; r<MAX; r++)
         for (c = 0; c<MAX; c++)
-            World[r][c] = 0; // INITIALIZE TO ALL 0s
+            World_type[r][c] = 0; // INITIALIZE TO ALL 0s
 }
 
-void copyTwoDimensional(int **World_orig, int **World_copy, int MAX){
+void copyTwoDimensional(int **World_orig, int **World_copy, int MAX) {
     //qDebug() << "Copying array!";
     // Make it circular first!
     // NEW and IMPROVED! Now with only one for loop!
@@ -57,21 +57,33 @@ void copyTwoDimensional(int **World_orig, int **World_copy, int MAX){
     World_orig[MAX-1][0] = World_orig[1][MAX-2];
     World_orig[0][MAX-1] = World_orig[MAX-2][1];
 
-    // NOW COPY from, into
-    for (int i = 0; i < MAX; i++)
+    // optimizing process
+    for (int i = 0; i < MAX/2+1; i++)
         for (int j = 0; j < MAX; j++)
+        {
             World_copy[i][j] = World_orig[i][j]; // MADE A COPY!
+            if (i < MAX/2)
+            {
+                World_copy[MAX-1-i][MAX-1-j] = World_orig[MAX-1-i][MAX-1-j];
+            }
+        }
     // that copied everything, even the gutter
 }
 
-void cycle_state (int **World, int r, int c){
-    if (World[r][c] == 0) { World[r][c] = 1; }
-    else if (World[r][c] == 1) { World[r][c] = 2; }
-    else if (World[r][c] == 2) { World[r][c] = 0; }
+void cycle_state (int **World, int r, int c) {
+    if (World[r][c] == 0) {
+        World[r][c] = 1;
+    }
+    else if (World[r][c] == 1) {
+        World[r][c] = 2;
+    }
+    else if (World[r][c] == 2) {
+        World[r][c] = 0;
+    }
     // cycle through
 }
 
-void populate_random(int **WorldRand, int MAX){
+void populate_random(int **WorldRand, int MAX) {
     int i,j;
     //qDebug() << "Randomly generating life...";
     int max_rands = 4*MAX;
@@ -85,7 +97,7 @@ void populate_random(int **WorldRand, int MAX){
 }
 
 
-void count_neighbors(int **World, int r, int c, int &num_type_1, int &num_type_2){
+void count_neighbors(int **World_type, int r, int c, int &num_type_0, int &num_type_1, int &num_type_2) {
     //    int current_state = World[r][c]; // We'll subtract this from the end value
     int maxrow = r+1;
     int maxcol = c+1;
@@ -96,8 +108,9 @@ void count_neighbors(int **World, int r, int c, int &num_type_1, int &num_type_2
         for (j=mincol; j <= maxcol; j++)
         {
             if ((i == r) && (j == c)) continue; // don't count myself
-            else if (World[i][j] == 1) num_type_1++; // We found a 1 bit
-            else if (World[i][j] == 2) num_type_2++; // We found a 2 bit
+            else if (World_type[i][j] == 1) num_type_1++; // We found a 1 bit
+            else if (World_type[i][j] == 2) num_type_2++; // We found a 2 bit
+            else if (World_type[i][j] == 0) num_type_0++;
             // We don't add 0 bits
         }
 }
@@ -111,7 +124,7 @@ int next_bit_state(int current_state, int num_type_1, int num_type_2)
         if (num_type_1 > num_type_2)
         {
             return 1;
-        } else if (num_type_2 > num_type_1){
+        } else if (num_type_2 > num_type_1) {
             return 2;
         }
     }
@@ -123,31 +136,40 @@ int next_bit_state(int current_state, int num_type_1, int num_type_2)
     return 0; // Death
 }
 
-void calculate_next_generation(int **World_original, int& generation, int MAX)
+void calculate_next_generation(int **World_original, int **World_color, int& generation, int MAX)
 {
+
     generation++; // counter of generations passed by ref.
+
     int **World_neXtgen = new int *[MAX]; // LOCAL
     for (int i =0; i< MAX; i++)
         World_neXtgen[i] = new int[MAX];
+    int num_type_0, num_type_1, num_type_2;
 
-    int num_type_1, num_type_2;
-
-    //initialize_world(World_neXtgen, MAX, r_end, c_end); // COPY IS ALL DEAD
     copyTwoDimensional(World_original, World_neXtgen, MAX); // copy from 2D original, into 2D copy (2nd arg)
     // -1 from end and start from 1 makes the buffer 1 on all sides
-    for (int r = 1; r <= MAX-2; r++)
+    for (int r = 1; r <= (MAX-2); r++)
     {
         for (int c = 1; c <= MAX-2; c++)
         {
-            num_type_1 = 0; num_type_2 = 0;
-            count_neighbors(World_original, r, c, num_type_1, num_type_2);
+            num_type_0 = 0;
+            num_type_1 = 0;
+            num_type_2 = 0;
+            count_neighbors(World_original, r, c, num_type_0, num_type_1, num_type_2);
             World_neXtgen[r][c] = next_bit_state(World_original[r][c], num_type_1, num_type_2);
+            World_color[r][c] = (1*num_type_0 + 10*num_type_1+ 100*num_type_2); // since we can't have 10 neighbors, we're safe!
+            //if (r < ((MAX-2)/2))
+            //            {
+            //                count_neighbors(World_original, MAX-1-r, c, num_type_0, num_type_1, num_type_2);
+            //                World_neXtgen[MAX-1-r][c] = next_bit_state(World_original[r][c], num_type_1, num_type_2);
+            //                World_colorOverlay[MAX-1-r][c] = 1*num_type_0 + 10*num_type_1+ 100*num_type_2; // since we can't have 10 neighbors, we're safe!
+            //            }
         }
     }
     copyTwoDimensional(World_neXtgen, World_original, MAX); // copy back from 2D copy and processed file, into 2D World
 
     // Free memory!
-    for( int i = 0 ; i < MAX ; i++ )
+    for ( int i = 0 ; i < MAX ; i++ )
         delete [] World_neXtgen[i] ;
     delete [] World_neXtgen;
 }
@@ -163,7 +185,7 @@ void substr (char whole[], char part[], int startpos, int endpos)
 
 int findpos (char here[], char what)
 {
-    for(int i = 0; i < strlen(here); i++)
+    for (int i = 0; i < strlen(here); i++)
         if (here[i] == what) return i;
     return -1; // NOT FOUND!
 }

@@ -1,0 +1,13 @@
+/*
+
+
+Mapping and color alteration based on proximity to other cells
+
+000000	123321
+011110	223222
+010010	347743
+011110	223222
+000000	123321
+
+
+*/

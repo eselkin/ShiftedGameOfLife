@@ -9,11 +9,16 @@ MyPanelOpenGL::MyPanelOpenGL(QWidget *parent) :
     QGLWidget(parent)
 {
     MAX = 200;
+
     World = new int *[MAX];
     for (int i = 0; i < MAX; i++)
         World[i] = new int [MAX];
-
     initialize_world(World, MAX);
+
+    World_colorOverlay = new int *[MAX];
+    for (int i = 0; i< MAX; i++)
+        World_colorOverlay[i] = new int [MAX];
+    initialize_world(World_colorOverlay, MAX);
 
     strcpy(outfilename, "Matrix_save.txt");
     strcpy(infilename, "Matrix_save.txt");
@@ -31,7 +36,7 @@ MyPanelOpenGL::MyPanelOpenGL(QWidget *parent) :
     y_initial=1;
     POI_x = 0;          // WILL BE CHANGED BY --> button
     POI_y = 0;          //      "  "          <-- button
-    zoom_in = 1;      // this integer value will be increased, decreased by +/-
+    zoom_in = 1;        // this integer value will be increased, decreased by +/-
     draw_grid = false;
     drawselectionbox = false;
     displayGutters(true);
@@ -45,8 +50,7 @@ void MyPanelOpenGL::displayGrid(bool yn)
         draw_grid = true;
     else
         draw_grid = false;
-    update();
-    glFlush();
+    updateGL();
 }
 
 void MyPanelOpenGL::displayGutters(bool yn)
@@ -76,7 +80,6 @@ void MyPanelOpenGL::displayGutters(bool yn)
         GLgreen_2_g = 0.0f;
     }
     updateGL();
-    repaint();
 }
 
 void MyPanelOpenGL::setScale()
@@ -103,7 +106,8 @@ void MyPanelOpenGL::setScale()
 
 float MyPanelOpenGL::cr_to_xy (int c, char cr)
 {
-    double screen_size; double box_pixels;
+    double screen_size;
+    double box_pixels;
     if (cr == 'c')
         screen_size = this->width();
     else
@@ -116,7 +120,8 @@ float MyPanelOpenGL::cr_to_xy (int c, char cr)
 
 int MyPanelOpenGL::mouse_x_to_c (int x, char xy)
 {
-    double screen_size; double box_pixels;
+    double screen_size;
+    double box_pixels;
     if (xy == 'x')
         screen_size = this->width();
     else
@@ -144,6 +149,7 @@ void MyPanelOpenGL::initializeGL()
 
 void MyPanelOpenGL::resizeGL(int w, int h)
 {
+    setScale();
     glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
     glViewport(0, 0, (GLint)w, (GLint)h );
@@ -164,15 +170,22 @@ void MyPanelOpenGL::paintGL()
     {
         for (c = 0; c<MAX; c++)
         {
+            float factor_0 =  0.5+0.2*(World_colorOverlay[r][c]%10);
+            //qDebug()<< "Factor0" << factor_0;
+            float factor_1 =  0.5+0.2*(((World_colorOverlay[r][c]%100)-factor_0)/10);
+            //qDebug()<< "Factor1" << factor_1;
+            float factor_2 =  0.5+0.2*((World_colorOverlay[r][c]-factor_1-factor_0)/100);
+            //qDebug()<< "Factor2" << factor_2;
+
             //qDebug()<< "got here initializeGL";
-            switch(World[r][c])
+            switch (World[r][c])
             {
             case 0:
             {
                 if (r == 0 || c == 0 || r == MAX-1 || c == MAX-1)
                     glColor3f(GLred_0_g, GLgreen_0_g, GLblue_0_g);
                 else
-                    glColor3f(GLred_0,  GLgreen_0, GLblue_0);
+                    glColor3f(factor_0*GLred_0,  factor_0*GLgreen_0, factor_0*GLblue_0);
             }
                 break;
             case 1:
@@ -180,7 +193,7 @@ void MyPanelOpenGL::paintGL()
                 if (r == 0 || c == 0 || r == MAX-1 || c == MAX-1)
                     glColor3f(GLred_1_g, GLgreen_1_g, GLblue_1_g);
                 else
-                    glColor3f(GLred_1,  GLgreen_1, GLblue_1);
+                    glColor3f(factor_2*GLred_1,  factor_1*GLgreen_1, GLblue_1);
             }
                 break;
             case 2:
@@ -188,7 +201,7 @@ void MyPanelOpenGL::paintGL()
                 if (r == 0 || c == 0 || r == MAX-1 || c == MAX-1)
                     glColor3f(GLred_2_g, GLgreen_2_g, GLblue_2_g);
                 else
-                    glColor3f(GLred_2, GLgreen_2, GLblue_2);
+                    glColor3f(factor_2*GLred_2,  factor_1*GLgreen_2, GLblue_2);
             }
                 break;
             }
@@ -217,10 +230,14 @@ void MyPanelOpenGL::paintGL()
             if (drawselectionbox && MAX <= 1000)
             {
                 cycle_select++; // This allows it to not get overwhelmed by drawing boxes on boxes!
-                if (cycle_select == 20) {
+                if (cycle_select == 25)
+                {
                     cycle_select = 0;
                     glLineWidth(boxwidth/MAX/2);
-                    glColor3f(0.0f,2.0f,0.0f);
+                    if ((GLred_0+0.6 > (GLfloat)1.1) || (GLgreen_0+0.6 > (GLfloat)1.1) || (GLblue_0+0.6 > (GLfloat)1.1))
+                        glColor3f(GLred_0-.5, GLgreen_0-.5, GLblue_0-.5);
+                    else
+                        glColor3f(GLred_0+.5, GLgreen_0+.5, GLblue_0+.5);
                     glBegin(GL_LINE_LOOP); // draw line around it
                     glVertex2f(x_initial+(c_begin*boxwidth)     , y_initial-(r_begin*boxwidth));
                     glVertex2f(x_initial+(c_begin*boxwidth)     , y_initial-((r_end+1)*boxwidth));
@@ -237,9 +254,13 @@ void MyPanelOpenGL::paintGL()
 void MyPanelOpenGL::setMAX(int newValue)
 {
     //delete old pointers! to make room for new!
-    for( int i = 0 ; i < MAX ; i++ )
+    for ( int i = 0 ; i < MAX ; i++ )
         delete [] World[i] ;
     delete [] World;
+
+    for ( int i = 0 ; i < MAX ; i++ )
+        delete [] World_colorOverlay[i] ;
+    delete [] World_colorOverlay;
 
     MAX=newValue;
     r_begin = 1;
@@ -251,12 +272,13 @@ void MyPanelOpenGL::setMAX(int newValue)
     World = new int *[MAX];
     for (int i = 0; i < MAX; i++)
         World[i] = new int [MAX];
-
+    World_colorOverlay = new int *[MAX];
+    for (int i = 0; i < MAX; i++)
+        World_colorOverlay[i] = new int [MAX];
     int currentwidth = this->parentWidget()->width();
     int currentheight = this->parentWidget()->height();
     this->parentWidget()->resize(10,10);
     this->parentWidget()->resize(currentwidth, currentheight);
-    this->update();
     this->updateGL();
     setScale();
     resetWorld();
@@ -266,7 +288,7 @@ void MyPanelOpenGL::setMAX(int newValue)
 
 void MyPanelOpenGL::keyPressEvent(QKeyEvent *kevent)
 {
-    switch(kevent->key())
+    switch (kevent->key())
     {
     case Qt::Key_Right:
     {
@@ -388,7 +410,7 @@ void MyPanelOpenGL::mousePressEvent(QMouseEvent *mevent)
         } // end case
         case Qt::RightButton:
         {
-            switch(mevent->modifiers())
+            switch (mevent->modifiers())
             {
             case Qt::ControlModifier:
             {
@@ -438,11 +460,11 @@ void MyPanelOpenGL::mouseReleaseEvent(QMouseEvent *mevent2)
         int pos_x = mevent2->localPos().x();
         int pos_y = mevent2->localPos().y();
 
-        switch(mevent2->button())
+        switch (mevent2->button())
         {
         case Qt::LeftButton:
         {
-            switch(mevent2->modifiers())
+            switch (mevent2->modifiers())
             {
             case Qt::ShiftModifier:
             {
@@ -504,8 +526,10 @@ void MyPanelOpenGL::mouseReleaseEvent(QMouseEvent *mevent2)
                     // reset!
                     pressed_left = false;
                     drawselectionbox = false;
-                    c_begin = 1; r_begin=1;
-                    c_end = MAX-2; r_end = MAX-2;
+                    c_begin = 1;
+                    r_begin=1;
+                    c_end = MAX-2;
+                    r_end = MAX-2;
                 } // if pressed_left == true end...
                 break;
             } // end modifiers last case
@@ -536,7 +560,8 @@ void MyPanelOpenGL::mouseReleaseEvent(QMouseEvent *mevent2)
                 if (QMessageBox::question(this, "Load this here?", Question1, QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
                     loadFromInFile();
 
-                c_begin = 1; r_begin = 1;
+                c_begin = 1;
+                r_begin = 1;
                 pressed_right = false;
             }
             break; // Right mouse button case
@@ -559,7 +584,7 @@ void MyPanelOpenGL::mouseReleaseEvent(QMouseEvent *mevent2)
 void MyPanelOpenGL::startGeneration()
 {
     //qDebug() << "Start generation pressed";
-    if(!timer)
+    if (!timer)
     {
         srand(time(NULL)); // new random seed
         timer = new QTimer(this);
@@ -581,14 +606,16 @@ void MyPanelOpenGL::stopGeneration()
 void MyPanelOpenGL::stepGeneration()
 {
     // just once! no timer connected
-    calculate_next_generation(World, generation, MAX);
+    //calculate_next_generation(World, generation, MAX);
+    calculate_next_generation(World, World_colorOverlay, generation, MAX);
     updateGL();
 }
 
 void MyPanelOpenGL::process()
 {
     //qDebug() << "Calculating next gen..."; // every second or so
-    calculate_next_generation(World, generation, MAX);
+    //calculate_next_generation(World, generation, MAX);
+    calculate_next_generation(World, World_colorOverlay, generation, MAX);
     repaint();
     updateGL();
 }
@@ -628,6 +655,7 @@ void MyPanelOpenGL::resetWorld()
     POI_x = 0;
     POI_y = 0;
     initialize_world(World, MAX);
+    initialize_world(World_colorOverlay, MAX);
     repaint();
     updateGL();
 }
@@ -660,7 +688,8 @@ void MyPanelOpenGL::saveToOutFile()
         {// maybe I will later...
             QMessageBox::information(this, "Error", "File not saved! get a new name!");
             //exit(0); // This is a more serious error because, that would mean we can't write to where we are!
-        } else
+        }
+        else
         {
             outfile << r_end-r_begin+1 << "x"<< c_end-c_begin+1 << endl; // output dimension line.
             int i, j;
@@ -706,7 +735,8 @@ void MyPanelOpenGL::loadFromInFile()
         cols_end += c;    // At most MAX-2
         rows_end += r;    // At most MAX-2
         //qDebug() << "NOW:" << rows_end << " by " << cols_end;
-        for (; ((r <= rows_end)&&(infile.getline(temp_array, cols_from_file+1, '\n'))) ; r++){
+        for (; ((r <= rows_end)&&(infile.getline(temp_array, cols_from_file+1, '\n'))) ; r++)
+        {
             //qDebug() <<"TEMP:"<< temp_array;
             // pull entire line, show only up to MAX-2
             for (int i = 0; (((c+i) <= MAX-2) && (i < (strlen(temp_array)))); i++)
@@ -748,4 +778,7 @@ void MyPanelOpenGL::displayHelp()
 
     QMessageBox::information(this, "Help!", Instructions1, QMessageBox::Cancel);
 }
+
+
+
 

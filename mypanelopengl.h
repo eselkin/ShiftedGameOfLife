@@ -85,7 +85,9 @@ protected slots:
 private:
     // THE WORLD
     int **World;
-
+    int **World_colorOverlay; // will contain an int made up of 0-8 and 0-8
+                              //and will realate to an intensity multiplication overlay for 0-8 of it's type, and 0-8 of the other
+	
     // ITS GENERATION
     int generation;
 

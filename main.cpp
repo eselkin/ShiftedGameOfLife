@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     QSplashScreen SplashScreenEli(Elipicture);
     SplashScreenEli.show();
     MainWindow w;
-    I::sleep(6);
+    I::sleep(2);
     w.showMaximized();
     SplashScreenEli.finish(&w);
     return a.exec();
