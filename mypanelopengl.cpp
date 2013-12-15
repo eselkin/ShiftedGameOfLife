@@ -166,49 +166,19 @@ void MyPanelOpenGL::paintGL()
 
     // now do the drawing (the display world function, really)
     int   r, c; // row col
+    std::ofstream color_file ("Colors.txt");
     for (r = 0; r<MAX; r++)
     {
         for (c = 0; c<MAX; c++)
         {
-            float factor_0 =  0.5+0.2*(World_colorOverlay[r][c]%10);
-            //qDebug()<< "Factor0" << factor_0;
-            float factor_1 =  0.5+0.2*(((World_colorOverlay[r][c]%100)-factor_0)/10);
-            //qDebug()<< "Factor1" << factor_1;
-            float factor_2 =  0.5+0.2*((World_colorOverlay[r][c]-factor_1-factor_0)/100);
-            //qDebug()<< "Factor2" << factor_2;
+            mix_colors(World[r][c], World_colorOverlay[r][c], color_file);
+            // WE WILL FIGURE OUT BORDER / GUTTER LATER
+            if (r == 0 || c == 0 || r == MAX-1 || c == MAX-1)
+                glColor3f(GLred_0_g, GLgreen_0_g, GLblue_0_g);
+            else
+                glColor3f(factor_0, factor_1, factor_2);
 
-            //qDebug()<< "got here initializeGL";
-            switch (World[r][c])
-            {
-            case 0:
-            {
-                if (r == 0 || c == 0 || r == MAX-1 || c == MAX-1)
-                    glColor3f(GLred_0_g, GLgreen_0_g, GLblue_0_g);
-                else
-                    glColor3f(factor_0*GLred_0,  factor_0*GLgreen_0, factor_0*GLblue_0);
-            }
-                break;
-            case 1:
-            {
-                if (r == 0 || c == 0 || r == MAX-1 || c == MAX-1)
-                    glColor3f(GLred_1_g, GLgreen_1_g, GLblue_1_g);
-                else
-                    glColor3f(factor_2*GLred_1,  factor_1*GLgreen_1, GLblue_1);
-            }
-                break;
-            case 2:
-            {
-                if (r == 0 || c == 0 || r == MAX-1 || c == MAX-1)
-                    glColor3f(GLred_2_g, GLgreen_2_g, GLblue_2_g);
-                else
-                    glColor3f(factor_2*GLred_2,  factor_1*GLgreen_2, GLblue_2);
-            }
-                break;
-            }
-            //            glPointSize(boxwidth*400);
-            //            glBegin(GL_SPHERE_MAP)
-            //            glBegin(GL_POINTS);
-            //            glVertex2d(x_initial + ((c+.25)*boxwidth), y_initial-((r+.25)*boxwidth));
+            // DRAW A BOX IN A COLOR SET ABOVE!
             glBegin(GL_QUADS); // draw square
             glVertex2f(x_initial+(c*boxwidth)     , y_initial-(r*boxwidth));
             glVertex2f(x_initial+(c*boxwidth)     , y_initial-((r+1)*boxwidth));
@@ -248,6 +218,84 @@ void MyPanelOpenGL::paintGL()
             }
         }// end for inner loop
     } // outer for loop!
+    color_file.close();
+}
+
+void MyPanelOpenGL::mix_colors(int element, int coloroverlay, std::ofstream &color_out)
+{
+
+    int intensity_0 = coloroverlay%10;
+    int intensity_1 = (((coloroverlay%100)-intensity_0)/10);
+    int intensity_2 = (((coloroverlay%100)-intensity_1-intensity_0)/10);
+
+    color_out << "intensity is now:" << intensity_0 << ": " << intensity_1 << ": " << intensity_2 << endl;
+
+    //qDebug() << "intensity_0:" <<intensity_0 << "intensity_1:" << intensity_1 << "intensity_2:" << intensity_2;
+    if (element == 0)
+    {
+        factor_0 = GLred_0;
+        factor_1 = GLgreen_0;
+        factor_2 = GLblue_0;
+
+        if (intensity_2 < intensity_1)
+        {
+            int diff = abs(intensity_1 - intensity_0);
+            factor_0 += ((factor_0 + GLred_1)  /diff*2);
+            factor_1 += ((factor_1 + GLgreen_1)/diff*2);
+            factor_2 += ((factor_2 + GLblue_1) /diff*2);
+        }
+        else if (intensity_1 < intensity_2)
+        {
+            int diff = abs(intensity_2 - intensity_0);
+            factor_0 += ((factor_0 + GLred_2)  /diff*2);
+            factor_1 += ((factor_1 + GLgreen_2)/diff*2);
+            factor_2 += ((factor_2 + GLblue_2) /diff*2);
+        }
+    }
+    else if (element == 2)
+    {
+        factor_0 = GLred_2;
+        factor_1 = GLgreen_2;
+        factor_2 = GLblue_2;
+
+        if (intensity_0 < intensity_1)
+        {
+            int diff = abs(intensity_1 - intensity_2);
+            factor_0 += ((factor_0 + GLred_1)  /diff*2);
+            factor_1 += ((factor_1 + GLgreen_1)/diff*2);
+            factor_2 += ((factor_2 + GLblue_1) /diff*2);
+        }
+        else if (intensity_1 < intensity_0)
+        {
+            int diff = abs(intensity_0 - intensity_2);
+            factor_0 += ((factor_0 + GLred_0)  /diff*2);
+            factor_1 += ((factor_1 + GLgreen_0)/diff*2);
+            factor_2 += ((factor_2 + GLblue_0) /diff*2);
+        }
+
+    }
+    else if (element == 1)
+    {
+        factor_0 = GLred_1;
+        factor_1 = GLgreen_1;
+        factor_2 = GLblue_1;
+
+        if (intensity_2 < intensity_0)
+        {
+            int diff = abs(intensity_0 - intensity_1);
+            factor_0 += ((factor_0 + GLred_0)  /diff*2);
+            factor_1 += ((factor_1 + GLgreen_0)/diff*2);
+            factor_2 += ((factor_2 + GLblue_0) /diff*2);
+        }
+        else if (intensity_0 < intensity_2)
+        {
+            int diff = abs(intensity_2 - intensity_1);
+            factor_0 += ((factor_0 + GLred_2)  /diff*2);
+            factor_1 += ((factor_1 + GLgreen_2)/diff*2);
+            factor_2 += ((factor_2 + GLblue_2) /diff*2);
+        }
+    }
+    color_out << "Color is now R:  " << factor_0 << "G: " << factor_1 << "B: " << factor_2 << endl;
 }
 
 // Change MAX size

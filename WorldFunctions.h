@@ -157,7 +157,7 @@ void calculate_next_generation(int **World_original, int **World_color, int& gen
             num_type_2 = 0;
             count_neighbors(World_original, r, c, num_type_0, num_type_1, num_type_2);
             World_neXtgen[r][c] = next_bit_state(World_original[r][c], num_type_1, num_type_2);
-            World_color[r][c] = (1*num_type_0 + 10*num_type_1+ 100*num_type_2); // since we can't have 10 neighbors, we're safe!
+            World_color[r][c] = (1*num_type_0 + 10*num_type_1 + 100*num_type_2); // since we can't have 10 neighbors, we're safe!
             //if (r < ((MAX-2)/2))
             //            {
             //                count_neighbors(World_original, MAX-1-r, c, num_type_0, num_type_1, num_type_2);

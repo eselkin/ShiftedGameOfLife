@@ -1,5 +1,7 @@
 #ifndef MYPANELOPENGL_H
 #define MYPANELOPENGL_H
+#include <fstream>
+#include <iostream>
 #include <QtGui>
 #include <GL/glu.h>
 #include <QGLWidget>
@@ -36,6 +38,12 @@ private slots:
 public:
     explicit MyPanelOpenGL(QWidget *parent = 0);
     int MAX;
+
+    float factor_0; // R
+    float factor_1; // G
+    float factor_2; // B
+    // based from on-screen settings and controlled by intensities
+
     // can be set on screen
     GLfloat GLred_0;
     GLfloat GLblue_0;
@@ -79,6 +87,7 @@ protected:
     void  initializeGL();
     void  resizeGL(int w, int h);
     void  paintGL();
+    void mix_colors(int element, int coloroverlay, std::ofstream &color_out);
 
 protected slots:
 
