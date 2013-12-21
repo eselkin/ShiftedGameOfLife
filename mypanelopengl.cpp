@@ -92,7 +92,6 @@ void MyPanelOpenGL::setScale()
         MAX_scale = MAX_y;
     boxwidth = (2.0000/MAX);
     // 2*(abs(-1)+1), 2=100% of available space!
-    // qDebug() << "Boxwidth: " << boxwidth;
     // 1,1
     // 1,1
     // x_initial+(j*boxwidth)     , y_initial-(i*boxwidth)
@@ -102,34 +101,6 @@ void MyPanelOpenGL::setScale()
     //
     //i=0, j=0 (-1,1)(-1,0)(0,0)(0,1)       i=0, j=1 (0,1)(0,0)(1,0)(1,1)
     //i=1, j=0 (-1,0)(-1,-1)(0,-1)(0,0)
-}
-
-float MyPanelOpenGL::cr_to_xy (int c, char cr)
-{
-    double screen_size;
-    double box_pixels;
-    if (cr == 'c')
-        screen_size = this->width();
-    else
-        screen_size = this->height();
-    // gets the width and height of the panel!!!!
-    box_pixels = (screen_size*1.0) / (MAX*1.0);
-    float xy_val = ceilf(cr * box_pixels + 1);
-    return xy_val;
-}
-
-int MyPanelOpenGL::mouse_x_to_c (int x, char xy)
-{
-    double screen_size;
-    double box_pixels;
-    if (xy == 'x')
-        screen_size = this->width();
-    else
-        screen_size = this->height();
-    box_pixels = (screen_size*1.0)/ (MAX*1.0);
-    int c = floor( (x-1)/box_pixels );  //n*box_pixels=xpixels
-
-    return c;
 }
 
 void MyPanelOpenGL::initializeGL()
@@ -166,12 +137,14 @@ void MyPanelOpenGL::paintGL()
 
     // now do the drawing (the display world function, really)
     int   r, c; // row col
-    std::ofstream color_file ("Colors.txt");
+    //    std::ofstream color_file ("Colors.txt");
     for (r = 0; r<MAX; r++)
     {
         for (c = 0; c<MAX; c++)
         {
-            mix_colors(World[r][c], World_colorOverlay[r][c], color_file);
+            //mix_colors(World[r][c], World_colorOverlay[r][c], color_file);
+            mix_colors(World[r][c], World_colorOverlay[r][c]);
+
             // WE WILL FIGURE OUT BORDER / GUTTER LATER
             if (r == 0 || c == 0 || r == MAX-1 || c == MAX-1)
                 glColor3f(GLred_0_g, GLgreen_0_g, GLblue_0_g);
@@ -218,19 +191,22 @@ void MyPanelOpenGL::paintGL()
             }
         }// end for inner loop
     } // outer for loop!
-    color_file.close();
+    //color_file.close();
 }
 
-void MyPanelOpenGL::mix_colors(int element, int coloroverlay, std::ofstream &color_out)
+
+
+void MyPanelOpenGL::mix_colors(int element, int coloroverlay)
 {
 
+    // last num
     int intensity_0 = coloroverlay%10;
+    // second to last
     int intensity_1 = (((coloroverlay%100)-intensity_0)/10);
-    int intensity_2 = (((coloroverlay%100)-intensity_1-intensity_0)/10);
+    // first
+    int intensity_2 = ((coloroverlay-(coloroverlay%100))/100);
 
-    color_out << "intensity is now:" << intensity_0 << ": " << intensity_1 << ": " << intensity_2 << endl;
-
-    //qDebug() << "intensity_0:" <<intensity_0 << "intensity_1:" << intensity_1 << "intensity_2:" << intensity_2;
+    //color_out << "intensity is now:" << intensity_0 << ": " << intensity_1 << ": " << intensity_2 << endl;
     if (element == 0)
     {
         factor_0 = GLred_0;
@@ -244,35 +220,14 @@ void MyPanelOpenGL::mix_colors(int element, int coloroverlay, std::ofstream &col
             factor_1 += ((factor_1 + GLgreen_1)/diff*2);
             factor_2 += ((factor_2 + GLblue_1) /diff*2);
         }
-        else if (intensity_1 < intensity_2)
+        // else if
+        if (intensity_1 < intensity_2)
         {
             int diff = abs(intensity_2 - intensity_0);
             factor_0 += ((factor_0 + GLred_2)  /diff*2);
             factor_1 += ((factor_1 + GLgreen_2)/diff*2);
             factor_2 += ((factor_2 + GLblue_2) /diff*2);
         }
-    }
-    else if (element == 2)
-    {
-        factor_0 = GLred_2;
-        factor_1 = GLgreen_2;
-        factor_2 = GLblue_2;
-
-        if (intensity_0 < intensity_1)
-        {
-            int diff = abs(intensity_1 - intensity_2);
-            factor_0 += ((factor_0 + GLred_1)  /diff*2);
-            factor_1 += ((factor_1 + GLgreen_1)/diff*2);
-            factor_2 += ((factor_2 + GLblue_1) /diff*2);
-        }
-        else if (intensity_1 < intensity_0)
-        {
-            int diff = abs(intensity_0 - intensity_2);
-            factor_0 += ((factor_0 + GLred_0)  /diff*2);
-            factor_1 += ((factor_1 + GLgreen_0)/diff*2);
-            factor_2 += ((factor_2 + GLblue_0) /diff*2);
-        }
-
     }
     else if (element == 1)
     {
@@ -287,7 +242,8 @@ void MyPanelOpenGL::mix_colors(int element, int coloroverlay, std::ofstream &col
             factor_1 += ((factor_1 + GLgreen_0)/diff*2);
             factor_2 += ((factor_2 + GLblue_0) /diff*2);
         }
-        else if (intensity_0 < intensity_2)
+        // else if
+        if (intensity_0 < intensity_2)
         {
             int diff = abs(intensity_2 - intensity_1);
             factor_0 += ((factor_0 + GLred_2)  /diff*2);
@@ -295,19 +251,42 @@ void MyPanelOpenGL::mix_colors(int element, int coloroverlay, std::ofstream &col
             factor_2 += ((factor_2 + GLblue_2) /diff*2);
         }
     }
-    color_out << "Color is now R:  " << factor_0 << "G: " << factor_1 << "B: " << factor_2 << endl;
+    else if (element == 2)
+    {
+        factor_0 = GLred_2;
+        factor_1 = GLgreen_2;
+        factor_2 = GLblue_2;
+
+        if (intensity_1 < intensity_0)
+        {
+            int diff = abs(intensity_0 - intensity_2);
+            factor_0 += ((factor_0 + GLred_0)  /diff*2);
+            factor_1 += ((factor_1 + GLgreen_0)/diff*2);
+            factor_2 += ((factor_2 + GLblue_0) /diff*2);
+        }
+        // else  if
+        if (intensity_0 < intensity_1)
+        {
+            int diff = abs(intensity_1 - intensity_2);
+            factor_0 += ((factor_0 + GLred_1)  /diff*2);
+            factor_1 += ((factor_1 + GLgreen_1)/diff*2);
+            factor_2 += ((factor_2 + GLblue_1) /diff*2);
+        }
+
+    }
+    //color_out << "Color is now R:  " << factor_0 << "G: " << factor_1 << "B: " << factor_2 << endl;
 }
 
 // Change MAX size
 void MyPanelOpenGL::setMAX(int newValue)
 {
-    //delete old pointers! to make room for new!
+    //delete old pointers! to make room for ones of new size!
     for ( int i = 0 ; i < MAX ; i++ )
-        delete [] World[i] ;
+    {
+        delete [] World[i];
+        delete [] World_colorOverlay[i];
+    }
     delete [] World;
-
-    for ( int i = 0 ; i < MAX ; i++ )
-        delete [] World_colorOverlay[i] ;
     delete [] World_colorOverlay;
 
     MAX=newValue;
@@ -333,6 +312,35 @@ void MyPanelOpenGL::setMAX(int newValue)
 }
 
 // --------------------- MOUSE CLICKS SLOTS AND STUFF -------------------------------------//
+
+// Convert matrix elements to spots on the panel
+float MyPanelOpenGL::cr_to_xy (int c, char cr)
+{
+    double screen_size;
+    double box_pixels;
+    if (cr == 'c')
+        screen_size = this->width();
+    else
+        screen_size = this->height();
+    // gets the width OR height of the panel!!!!
+    box_pixels = (screen_size*1.0) / (MAX*1.0);
+    float xy_val = ceilf(cr * box_pixels + 1);
+    return xy_val;
+}
+
+// Convert pixels on the panel to spots on the matrix
+int MyPanelOpenGL::mouse_x_to_c (int x, char xy)
+{
+    double screen_size;
+    double box_pixels;
+    if (xy == 'x')
+        screen_size = this->width();
+    else
+        screen_size = this->height();
+    box_pixels = (screen_size*1.0)/ (MAX*1.0);
+    int c = floor( (x-1)/box_pixels );  //n*box_pixels=xpixels
+    return c;
+}
 
 void MyPanelOpenGL::keyPressEvent(QKeyEvent *kevent)
 {
@@ -631,7 +639,6 @@ void MyPanelOpenGL::mouseReleaseEvent(QMouseEvent *mevent2)
 
 void MyPanelOpenGL::startGeneration()
 {
-    //qDebug() << "Start generation pressed";
     if (!timer)
     {
         srand(time(NULL)); // new random seed
@@ -648,7 +655,7 @@ void MyPanelOpenGL::stopGeneration()
         delete timer;
         timer = NULL;
     }
-    updateGL();
+    //updateGL();
 }
 
 void MyPanelOpenGL::stepGeneration()
@@ -661,7 +668,6 @@ void MyPanelOpenGL::stepGeneration()
 
 void MyPanelOpenGL::process()
 {
-    //qDebug() << "Calculating next gen..."; // every second or so
     //calculate_next_generation(World, generation, MAX);
     calculate_next_generation(World, World_colorOverlay, generation, MAX);
     repaint();
@@ -687,7 +693,9 @@ void MyPanelOpenGL::randomize()
 {
     if (randomized < 16)
     {
-        populate_random(World, MAX);
+        int num_times = 2; // to randomize per press
+        for (int i = 0; i < num_times; i++)
+            populate_random(World, MAX);
         randomized++;
     }
     repaint();

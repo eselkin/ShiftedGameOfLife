@@ -102,13 +102,13 @@ void MainWindow::resetW()
 {
     changeRGB_1_1(0.0);
     changeRGB_1_2(0.0);
-    changeRGB_1_3(0.3);
+    changeRGB_1_3(0.0);
     changeRGB_2_1(0.0);
-    changeRGB_2_2(2.0);
+    changeRGB_2_2(0.2);
     changeRGB_2_3(0.0);
-    changeRGB_3_1(2.0);
+    changeRGB_3_1(0.0);
     changeRGB_3_2(0.0);
-    changeRGB_3_3(0.0);
+    changeRGB_3_3(0.2);
     PanelGL->resetWorld();
     update();
     PanelGL->updateGL();

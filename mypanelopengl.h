@@ -87,7 +87,7 @@ protected:
     void  initializeGL();
     void  resizeGL(int w, int h);
     void  paintGL();
-    void mix_colors(int element, int coloroverlay, std::ofstream &color_out);
+    void mix_colors(int element, int coloroverlay);
 
 protected slots:
 
