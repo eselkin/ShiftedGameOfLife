@@ -250,6 +250,13 @@ void MyPanelOpenGL::mix_colors(int element, int coloroverlay)
             factor_1 += ((factor_1 + GLgreen_2)/diff*2);
             factor_2 += ((factor_2 + GLblue_2) /diff*2);
         }
+
+        if (intensity_1 > intensity_2 || intensity_1 > intensity_0)
+        {
+            factor_0 += factor_0 + GLred_1;
+            factor_1 += factor_1 + GLblue_1;
+            factor_2 += factor_2 + GLgreen_1;
+        }
     }
     else if (element == 2)
     {
@@ -271,6 +278,12 @@ void MyPanelOpenGL::mix_colors(int element, int coloroverlay)
             factor_0 += ((factor_0 + GLred_1)  /diff*2);
             factor_1 += ((factor_1 + GLgreen_1)/diff*2);
             factor_2 += ((factor_2 + GLblue_1) /diff*2);
+        }
+        if (intensity_2 > intensity_1 || intensity_2 > intensity_0)
+        {
+            factor_0 += factor_0 + GLred_2;
+            factor_1 += factor_1 + GLblue_2;
+            factor_2 += factor_2 + GLgreen_2;
         }
 
     }
@@ -777,8 +790,10 @@ void MyPanelOpenGL::loadFromInFile()
         infile.getline(two_D_size, 42, '\n');
         get_m_size(two_D_size, rows_end, cols_from_file);
 
+        cols_from_file++;
         //qDebug() << rows_end << " by " << cols_from_file << "=" << strlen(two_D_size);
-        char temp_array[cols_from_file+1]; // Gets entire line from file!
+        //char temp_array[cols_from_file]; // Gets entire line from file!
+        char *temp_array = new char [cols_from_file];
         cols_end = cols_from_file;
 
         // if it's bigger than MAX-2 when added to c_being
@@ -791,7 +806,7 @@ void MyPanelOpenGL::loadFromInFile()
         cols_end += c;    // At most MAX-2
         rows_end += r;    // At most MAX-2
         //qDebug() << "NOW:" << rows_end << " by " << cols_end;
-        for (; ((r <= rows_end)&&(infile.getline(temp_array, cols_from_file+1, '\n'))) ; r++)
+        for (; ((r <= rows_end)&&(infile.getline(temp_array, cols_from_file, '\n'))) ; r++)
         {
             //qDebug() <<"TEMP:"<< temp_array;
             // pull entire line, show only up to MAX-2
@@ -803,6 +818,7 @@ void MyPanelOpenGL::loadFromInFile()
         }
         // r_begin and c_begin will be set by mouse clicks and reset to 1,1
         // therefore it will only be set by mouse, not by button push
+        delete temp_array;
     }
     infile.close();
     repaint();

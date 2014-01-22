@@ -4,7 +4,7 @@
 #include <fstream>
 #include <cstring>
 #include <stdlib.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <time.h>
 #include <QDebug>
 
